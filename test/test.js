@@ -1,5 +1,6 @@
 var assert = require('assert');
 var path = require('path');
+var isWindows = (process.platform === 'win32');
 
 describe('NPM Config on package.json', function () {
     beforeEach(function () {
@@ -170,9 +171,11 @@ describe('NPM Config on package.json', function () {
             assert.equal(process.env.HTTPS_PROXY, 'http://HTTPS_PROXY');
             assert.equal(process.env.NO_PROXY, 'google.com');
 
-            assert.equal(process.env.http_proxy, undefined);
-            assert.equal(process.env.https_proxy, undefined);
-            assert.equal(process.env.no_proxy, undefined);
+            if (!isWindows) {
+                assert.equal(process.env.http_proxy, undefined);
+                assert.equal(process.env.https_proxy, undefined);
+                assert.equal(process.env.no_proxy, undefined);
+            }
         });
 
         it('restores env variables', function () {
@@ -186,9 +189,16 @@ describe('NPM Config on package.json', function () {
             var config = require('../lib/Config').create('test/assets/env-variables').load();
             config.restore();
 
-            assert.equal(process.env.HTTP_PROXY, 'a');
-            assert.equal(process.env.HTTPS_PROXY, 'b');
-            assert.equal(process.env.NO_PROXY, 'c');
+            if (isWindows) {
+                assert.equal(process.env.HTTP_PROXY, 'd');
+                assert.equal(process.env.HTTPS_PROXY, 'e');
+                assert.equal(process.env.NO_PROXY, 'f');
+            }
+            else {
+                assert.equal(process.env.HTTP_PROXY, 'a');
+                assert.equal(process.env.HTTPS_PROXY, 'b');
+                assert.equal(process.env.NO_PROXY, 'c');
+            }
 
             assert.equal(process.env.http_proxy, 'd');
             assert.equal(process.env.https_proxy, 'e');
@@ -227,7 +237,7 @@ describe('Allow ${ENV} variables in .bowerrc', function() {
 
         var config = require('../lib/Config').read('test/assets/env-variables-values');
         assert.equal('a', config.storage.packages);
-        assert.equal('/tmp/b', config.tmp);
+        assert.equal((isWindows ? 'C:\\tmp\\b' : '/tmp/b'), config.tmp);
         assert.equal('${_myshellvar}', config.scripts.postinstall);
     });
 });
